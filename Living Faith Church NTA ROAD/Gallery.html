@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gallery</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f9f9f9;
+    }
+
+    header {
+        background: red;
+        color: white;
+        padding: 2rem 1rem;
+        text-align: center;
+    }
+
+    .header-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 20px;
+        flex-wrap: wrap;
+    }
+
+    .header-logo {
+        width: 70px;
+        height: auto;
+        border-radius: 20%;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    nav ul {
+        list-style: none;
+        background: #f4f4f4;
+        text-align: center;
+        margin: 0;
+        padding: 1rem;
+    }
+
+    nav ul li {
+        display: inline;
+        margin: 0 15px;
+    }
+
+    nav ul li a {
+        text-decoration: none;
+        color: #333;
+        font-weight: bold;
+    }
+
+    .gallery-container {
+      padding: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    h2 {
+      text-align: center;
+      color: #333;
+    }
+
+    .filter-links {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .filter-links a {
+      margin: 0 10px;
+      text-decoration: none;
+      color: #007BFF;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .filter-links a.active {
+      color: #FF0000;
+    }
+
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    .gallery-item {
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      background: #fff;
+      transition: transform 0.3s;
+    }
+
+    .gallery-item:hover {
+      transform: scale(1.05);
+    }
+
+    .gallery-item img,
+    .gallery-item video {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+    }
+
+    .gallery-item p {
+      padding: 10px;
+      text-align: center;
+      font-size: 14px;
+      color: #555;
+    }
+
+    .gallery-item video {
+      background-color: #000;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-container">
+        <img class="header-logo" src="living-faith-church-logo.jpg" alt="Living Faith Church Logo">
+        <div>
+            <h1>Living Faith Church, NTA ROAD</h1>
+            <p>Welcome to our official website. Encounter God, experience love, and enjoy grace!</p>
+        </div>
+    </div>
+</header>
+
+<nav>
+    <ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="leaders.html">Leaders</a></li>
+    </ul>
+</nav>
+
+  <div class="gallery-container">
+    <h2>Gallery</h2>
+    <div class="filter-links">
+      <a id="filterAll" class="active" onclick="filterGallery('all')">All</a>
+      <a id="filterPhotos" onclick="filterGallery('photos')">Photos</a>
+      <a id="filterVideos" onclick="filterGallery('videos')">Videos</a>
+    </div>
+    <div class="gallery-grid" id="galleryGrid"></div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
+  <script src="config.js"></script>
+  <script>
+    const storage = firebase.storage();
+    const storageRef = storage.ref();
+    const galleryGrid = document.getElementById('galleryGrid');
+
+    async function loadGallery(filter = 'all') {
+      try {
+        galleryGrid.innerHTML = "<p>Loading gallery...</p>";
+
+        const listRef = storageRef.child('posts');
+        const result = await listRef.listAll();
+
+        galleryGrid.innerHTML = "";
+
+        for (const itemRef of result.items) {
+          const url = await itemRef.getDownloadURL();
+          const fileName = itemRef.name;
+
+          const galleryItem = document.createElement('div');
+          galleryItem.classList.add('gallery-item');
+
+          // Determine file type
+          if (fileName.match(/\.(jpg|jpeg|png|gif)$/i)) {
+            if (filter === 'all' || filter === 'photos') {
+              galleryItem.innerHTML = `<img src="${url}" alt="${fileName}">`;
+              galleryGrid.appendChild(galleryItem);
+            }
+          } else if (fileName.match(/\.(mp4|webm|ogg)$/i)) {
+            if (filter === 'all' || filter === 'videos') {
+              galleryItem.innerHTML = `
+                <video controls>
+                  <source src="${url}" type="video/mp4">
+                  Your browser does not support the video tag.
+                </video>
+                <p>${fileName}</p>`;
+              galleryGrid.appendChild(galleryItem);
+            }
+          }
+        }
+
+        if (galleryGrid.children.length === 0) {
+          galleryGrid.innerHTML = "<p>No items available for the selected filter.</p>";
+        }
+      } catch (error) {
+        console.error("Error loading gallery: ", error);
+        galleryGrid.innerHTML = "<p>Failed to load gallery. Please try again later.</p>";
+      }
+    }
+
+    function filterGallery(filter) {
+      // Update active class
+      document.querySelectorAll('.filter-links a').forEach(link => link.classList.remove('active'));
+      document.getElementById(`filter${filter.charAt(0).toUpperCase() + filter.slice(1)}`).classList.add('active');
+
+      // Reload gallery based on filter
+      loadGallery(filter);
+    }
+
+    loadGallery(); // Load all items by default
+  </script>
+</body>
+</html>
